@@ -122,10 +122,6 @@ function showQuantityImages(quantityImages) {
     Notify.success(`Hooray! We found ${quantityImages} images.`);
 }
 
-// function showErrorMassage() {
-//     Notify.error("Oops, something went wrong. Pllease try again");
-// }
-
 function addSimpleLightBox() {
     let galleryLightBox = new SimpleLightbox(".gallery a", {
         captionsData: "alt",
