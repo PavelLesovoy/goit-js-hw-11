@@ -23,6 +23,7 @@ export class pixabayImages {
             page: this.page,
         });
 
+        
         try {
             const response = await axios.get(`${BASE_URL}?${searchParams}&q=${this.searchQuery}`);
 
@@ -30,7 +31,7 @@ export class pixabayImages {
             this.totalImages = response.data.totalHits;
 
             const images = await response.data.hits;
-            returnimages;
+            return images;
         } catch (error) {
             console.log(error);
         }

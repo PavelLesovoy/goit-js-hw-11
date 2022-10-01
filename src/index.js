@@ -1,4 +1,4 @@
-import './css/styles.css';
+import './css/styles.scss';
 import { Notify } from 'notiflix';
 import { pixabayImages } from './fetch';
 import 'simplelightbox/dist/simple-lightbox.min.css';
@@ -34,6 +34,7 @@ function onSearchImage(event) {
             showNotifyMessage();
             return;
         }
+        
 
         showQuantityImages(api.totalImages);
         renderMarkup(arrayImages);
@@ -48,6 +49,7 @@ function onSearchImage(event) {
     })
     .catch(error => console.log(error));
 }
+
 
 function onLoadMore() {
     api.fetchImages()
@@ -142,3 +144,4 @@ function smoothScroll() {
         behavior: 'smooth',
     });
 }
+
