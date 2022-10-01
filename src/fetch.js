@@ -4,8 +4,6 @@ const BASE_URL = 'https://pixabay.com/api/';
 const KEY = '30296942-4de4307a99055e9d668a05bee';
 
 export class pixabayImages {
-    // #BASE_URL = 'https://pixabay.com/api/';
-    // #KEY = '30296942-4de4307a99055e9d668a05bee';
     constructor() {
         this.searchQuery = '';
         this.page = 1;
@@ -45,6 +43,6 @@ export class pixabayImages {
         this.searchQuery = newQuery;
     }
     resetPage(){
-        this.page =1;
+        this.page = 1;
     }
 }
