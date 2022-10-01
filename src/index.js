@@ -1,91 +1,144 @@
 import './css/styles.css';
 import { Notify } from 'notiflix';
-import debounce from 'lodash.debounce';
-import { fetchCountries } from './fetchCountries.js';
+import { pixabayImages } from './fetch';
+import 'simplelightbox/dist/simple-lightbox.min.css';
+import SimpleLightbox from 'simplelightbox';
 
-const DEBOUNCE_DELAY = 300;
 
-const countriesList = document.querySelector('.country-list');
-const countriesIfro = document.querySelector('.country-info');
-const fieldSearch = document.querySelector('#search-box');
+const api = new pixabayImages;
+let totlPages = null;
 
-fieldSearch.addEventListener('input', debounce(onSearchCountry, DEBOUNCE_DELAY));
+const refs = {
+    form: document.getElementById('search-form'),
+    input: document.querySelector('[name="searchQuery"]'),
+    gallery: document.querySelector('.gallery'),
+    btn_load: document.querySelector('.load-more'),
+}
 
-function onSearchCountry(event) {
-    const countryName = event.target.value.trim();
+hideBtnLoadMore();
 
-    if (!countryName) {
-        resetCountries();
-        return;
-    }
+refs.form.addEventListener('submit', onSearchImage);
+refs.btn_load.addEventListener('click', onLoadMore);
 
-    fetchCountries(countryName)
-    .then(countries => {
-        if (countries.length > 10) {
-            showMessage();
-        } else if (countries.length >= 2 && countries.length < 10) {
-            findLessTenCountries(countries);
-        } else {
-            findOneCountry(countries);
+function onSearchImage(event) {
+    event.preventDefault();
+
+    api.searchQuery = refs.input.value;
+    api.resetPage();
+    hideBtnLoadMore();
+    clearGallery();
+
+    api.fetchImages()
+    .then(arrayImages => {
+        if (arrayImages.length === 0) {
+            showNotifyMessage();
+            return;
+        }
+
+        showQuantityImages(api.totalImages);
+        renderMarkup(arrayImages);
+        addSimpleLightBox();
+        showBtnLoadMore();
+        smoothScroll();
+
+        totlPages = api.totalImages / 40;
+        if(api.page > totlPages) {
+            showMassageInEndImages();
         }
     })
-    .catch(error => showError());
+    .catch(error => console.log(error));
 }
 
-function showMessage() {
-    resetCountries();
-    Notify.info("Too many matches found. Please enter a more specific name.");
-    return;
+function onLoadMore() {
+    api.fetchImages()
+    .then(arrayImages => {
+        renderMarkup(arrayImages);
+        addSimpleLightBox();
+        smoothScroll();
+
+        totlPages = api.totalImages / 40;
+        if(api.page > totlPages) {
+            showMassageInEndImages();
+        }
+    });
 }
 
-function findOneCountry(argsCountries) {
-    resetCountries();
-    renderInfoCiuntry(argsCountries);
-    return;
-}
-
-function findLessTenCountries(argsCountries) {
-    resetCountries();
-    renderListCountries(argsCountries);
-    return;
-}
-
-function showError() {
-    resetCountries();
-    Notify.failure('Oops, there is no country with that name');
-    return;
-}
-
-function renderListCountries(countriesArray) {
-    const list = countriesArray.map(({ name: {common}, flags: {svg} }) => {
-        return `<li class='item'>
-        <img class='country-img' src='${svg}' width="30" height="20"/>
-        <h2 class='country-name'>${common}</h2>
-        </li>`;
+function renderMarkup(images) {
+    const imageCard = images
+    .map(({largeImageURL, webformatURL, tags, likes, views, comments, downloads}) => {
+        return `<div class="photo-card">
+        <a class="gallery__item" href="${largeImageURL}">
+      <img class="gallery__image" src="${webformatURL}" alt="${tags}" loading="lazy" width="220" height="170" />
+      </a>
+      <div class="info">
+        <p class="info-item">
+        Likes <br/>
+          <b>${likes}</b>
+        </p>
+        <p class="info-item">
+        Views <br/>
+          <b>${views}</b>
+        </p>
+        <p class="info-item">
+        Comments <br/>
+          <b>${comments}</b>
+        </p>
+        <p class="info-item last_item">
+        Downloads <br/>
+          <b>${downloads}</b>
+        </p>
+      </div>
+    </div>`;
     })
     .join('');
 
-    countriesList.insertAdjacentHTML('beforeend', list);
+    refs.gallery.insertAdjacentHTML('beforeend',imageCard);
 }
 
-function renderInfoCiuntry(countriesArray) {
-    const markup = countriesArray.map(({ name, capital, languages, population, flags}) => {
-        return `<div class='country-box'>
-        <img class='country-img' src='${flags.svg}' width="50" height="40"/>
-        <h3 class='country-title'>${name.common}</h3>
-        </div>
-        <p><b>Capital: </b>${capital}</p>
-        <p><b>Population: </b>${population}</p>
-        <p><b>Languages: </b>${Object.values(languages).join(', ')}</p>`;
-    })
-    .join('');
-
-    countriesIfro.insertAdjacentHTML('beforeend', markup);
+function clearGallery() {
+    refs.gallery.innerHTML = '';
 }
 
-function resetCountries() {
-    countriesList.innerHTML = '';
-    countriesIfro.innerHTML = '';
+function showNotifyMessage() {
+    Notify.failure("Sorry, there are no images matching your search query. Please try again.")
 }
 
+function hideBtnLoadMore() {
+    refs.btn_load.classList.add('visually-hidden');
+}
 
+function showBtnLoadMore() {
+    refs.btn_load.classList.remove('visually-hidden');
+}
+
+function showMassageInEndImages() {
+    hideBtnLoadMore();
+    Notify.warning("We're sorry, but you've reached the end of search results.");
+}
+
+function showQuantityImages(quantityImages) {
+    Notify.success(`Hooray! We found ${quantityImages} images.`);
+}
+
+// function showErrorMassage() {
+//     Notify.error("Oops, something went wrong. Pllease try again");
+// }
+
+function addSimpleLightBox() {
+    let galleryLightBox = new SimpleLightbox(".gallery a", {
+        captionsData: "alt",
+        captionPosition: "bottom",
+        captionDelay: 250,
+    });
+    galleryLightBox.refresh();
+}
+
+function smoothScroll() {
+    const { height: cardHeight } = document.querySelector('.gallery')
+    .firstElementChild.getBoundingClientRect();
+
+    window.scrollBy({
+        top: cardHeight * 2,
+        behavior: 'smooth',
+    });
+}
