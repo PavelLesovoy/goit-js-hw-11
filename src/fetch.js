@@ -1,48 +1,47 @@
-import axios from "axios";
+import axios from 'axios';
+import Notiflix from 'notiflix';
 
-const BASE_URL = 'https://pixabay.com/api/';
-const KEY = '30296942-4de4307a99055e9d668a05bee';
+const loadMoreBtn = document.querySelector('.load-more');
+hideBtnLoadMore();
 
-export class pixabayImages {
-    constructor() {
-        this.searchQuery = '';
-        this.page = 1;
-        this.arrayImages = [];
-        this.totalImages = 0;
-    }
+export default async function fetchInfo(searchValue, pageNumber) {
+  const url = `https://pixabay.com/api/`;
 
-    async fetchImages() {
-        const searchParams = new URLSearchParams({
-            key: KEY,
-            image_type: 'photo',
-            orientation: 'horizontal',
-            safeseatch: true,
-            per_page: 40,
-            page: this.page,
-        });
+  return await axios
+    .get(url, {
+      params: {
+        key: '30296942-4de4307a99055e9d668a05bee',
+        q: `${searchValue}`,
+        image_type: 'photo',
+        orientation: 'horizontal',
+        safesearch: 'true',
+        per_page: 40,
+        page: `${pageNumber}`,
+      },
+    })
 
-        
-        try {
-            const response = await axios.get(`${BASE_URL}?${searchParams}&q=${this.searchQuery}`);
+    .then(res => {
+      if (res.data.totalHits < 40) {
+        hideBtnLoadMore();
+      }
 
-            this.page += 1;
-            this.totalImages = response.data.totalHits;
+      if (!res.data.totalHits) {
+        hideBtnLoadMore();
+        Notiflix.Notify.warning(
+          'Sorry, there are no images matching your search query. Please try again.'
+        );
+      }
 
-            const images = await response.data.hits;
-            return images;
-        } catch (error) {
-            console.log(error);
-        }
-    }
+      if (pageNumber === 1 && res.data.totalHits > 0) {
+        Notiflix.Notify.success(
+          `Hooray! We found ${res.data.totalHits} images.`
+        );
+      }
 
-    get query() {
-        return this.searchQuery;
-    }
+      return res.data;
+    });
+}
 
-    set query(newQuery) {
-        this.searchQuery = newQuery;
-    }
-    resetPage(){
-        this.page = 1;
-    }
+function hideBtnLoadMore() {
+  loadMoreBtn.classList.add('visually-hidden');
 }
